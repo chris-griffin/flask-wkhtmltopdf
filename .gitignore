@@ -11,6 +11,7 @@ config.py
 *.exe
 *.o
 *.so
+*.egg-info
  
 # Packages #
 ############

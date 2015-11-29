@@ -1,0 +1,198 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>flask_wkhtmltopdf &mdash; Flask-WkHTMLtoPDF 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/flasky.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Flask-WkHTMLtoPDF 0.1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body role="document">
+  
+  
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for flask_wkhtmltopdf</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Flask-WkHTMLtoPDF</span>
+
+<span class="sd">    -----------------</span>
+
+<span class="sd">    Convert JavaScript dependent Flask templates into PDFs with wkhtmltopdf.</span>
+
+<span class="sd">    :copyright: (c) 2015 by Chris Griffin</span>
+<span class="sd">    :license: MIT, see LICENSE file for more info</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="c">#Backward compatibility for 2.7</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
+<span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">render_template</span><span class="p">,</span> <span class="n">make_response</span>
+<span class="kn">import</span> <span class="nn">celery</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+
+<div class="viewcode-block" id="Wkhtmltopdf"><a class="viewcode-back" href="../index.html#flask_wkhtmltopdf.Wkhtmltopdf">[docs]</a><span class="k">class</span> <span class="nc">Wkhtmltopdf</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Wkhtmltopdf class container to use the robust wkhtmltopdf library which is </span>
+<span class="sd">    capable of generating a PDF from HTML, CSS, and JavaScript using a modified</span>
+<span class="sd">    WebKit engine. This extension allows you to easily incorporate this functionality</span>
+<span class="sd">    into your Flask app.</span>
+
+<span class="sd">    In addition to the dependencies automatically installed, you must manually </span>
+<span class="sd">    download the appropriate wkhtmltopdf command line tool from </span>
+<span class="sd">    http://wkhtmltopdf.org/downloads.html</span>
+
+<span class="sd">    The main function render_template_to_pdf() works similar to Flask&#39;s built-in </span>
+<span class="sd">    render_template() function and in fact utilizes some of the same underlying </span>
+<span class="sd">    functions. However, as the name suggests, it will return a pdf instead of </span>
+<span class="sd">    a rendered webpage.</span>
+
+<span class="sd">    To initialize, pass your flask app&#39;s object to Flask-WkHTMLtoPDF::</span>
+
+<span class="sd">        from flask_wkhtmltopdf import Wkhtmltopdf</span>
+
+<span class="sd">        app = Flask(__name__)</span>
+<span class="sd">        wkhtmltopdf = Wkhtmltopdf(app)</span>
+
+<span class="sd">    Then pass the template to the render_template_to_pdf() function. You can </span>
+<span class="sd">    pass Jinja2 params just like with render_template()::</span>
+
+<span class="sd">        render_template_to_pdf(&#39;test.html&#39;, download=True, save=False, param=&#39;hello&#39;)</span>
+
+<span class="sd">    Celery, an asynchronous task queue, is highly suggested when using Flask-WkHTMLtoPDF as rendering </span>
+<span class="sd">    the PDF can be resource heavy and take an unacceptable amount of time to generate. To </span>
+<span class="sd">    enable Celery, set &#39;WKHTMLTOPDF_USE_CELERY = True&#39; in your Flask app&#39;s config. </span>
+
+<span class="sd">    You must add three variables to your Flask app&#39;s config::</span>
+
+<span class="sd">        WKHTMLTOPDF_BIN_PATH = r&#39;C:\Program Files\wkhtmltopdf\bin&#39;</span>
+<span class="sd">        PDF_DIR_PATH =  os.path.join(os.path.dirname(os.path.abspath(__file__)), &#39;static&#39;, &#39;pdf&#39;)</span>
+
+
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">use_celery</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">app</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_init_app</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_init_app</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Initalizes the app with Flask-WkHTMLtoPDF.</span>
+
+<span class="sd">        :param app: The Flask application object.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_celery</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;WKHTMLTOPDF_USE_CELERY&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_path</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;WKHTMLTOPDF_BIN_PATH&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pdf_dir_path</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;PDF_DIR_PATH&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+
+    <span class="c">#checks to see if condition is true before applying decorator.</span>
+    <span class="k">def</span> <span class="nf">_maybe_decorate</span><span class="p">(</span><span class="n">condition</span><span class="p">,</span> <span class="n">decorator</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">decorator</span> <span class="k">if</span> <span class="n">condition</span> <span class="k">else</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span>
+
+
+    <span class="nd">@_maybe_decorate</span><span class="p">(</span><span class="n">use_celery</span><span class="p">,</span> <span class="n">celery</span><span class="o">.</span><span class="n">task</span><span class="p">())</span>
+<div class="viewcode-block" id="Wkhtmltopdf.render_template_to_pdf"><a class="viewcode-back" href="../index.html#flask_wkhtmltopdf.Wkhtmltopdf.render_template_to_pdf">[docs]</a>    <span class="k">def</span> <span class="nf">render_template_to_pdf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">template_name_or_list</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">download</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="o">**</span><span class="n">context</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Renders a template from the template folder with the given</span>
+<span class="sd">        context and produces a pdf. As this can be resource intensive, the function</span>
+<span class="sd">        can easily be decorated with celery.task() by setting the WKHTMLTOPDF_USE_CELERY to True.</span>
+<span class="sd">        </span>
+<span class="sd">        :param template_name_or_list:    The name of the template to be</span>
+<span class="sd">                                         rendered, or an iterable with template names.</span>
+<span class="sd">                                         The first one existing will be rendered.</span>
+<span class="sd">        :param save:    Specifies whether to save the temporary pdf generated. Defaults to False.</span>
+<span class="sd">        :param download:    Specifies if the pdf should be displayed in the browser</span>
+<span class="sd">                            or downloaded as an attachment. Defaults to False (in browser).</span>
+<span class="sd">        :param context:    The variables that should be available in the</span>
+<span class="sd">                           context of the Jinja2 template.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c">#Get the system&#39;s PATH and add wkhtmltopdf to it if necessary</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s">&quot;PATH&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s">&quot;wkhtmltopdf&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">path</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_path</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;WKHTMLTOPDF_BIN_PATH config variable must be set in the Flask app or added to the OS PATH&#39;</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&quot;PATH&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">os</span><span class="o">.</span><span class="n">pathsep</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_path</span> 
+
+        
+        <span class="c">#render appropriate template and write to a temp file</span>
+        <span class="n">rendered</span> <span class="o">=</span> <span class="n">render_template</span><span class="p">(</span><span class="n">template_name_or_list</span><span class="p">,</span> <span class="o">**</span><span class="n">context</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">suffix</span><span class="o">=</span><span class="s">&#39;.html&#39;</span><span class="p">,</span> <span class="nb">dir</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">__file__</span><span class="p">),</span> <span class="n">delete</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">temp_html</span><span class="p">:</span>
+            <span class="n">temp_html</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">rendered</span><span class="p">)</span>
+
+        <span class="c">#Checks to see if the pdf directory exists and generates a random pdf name</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pdf_dir_path</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;PDF_DIR_PATH config variable must be set in the Flask app&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pdf_dir_path</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pdf_dir_path</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">suffix</span><span class="o">=</span><span class="s">&#39;.pdf&#39;</span><span class="p">,</span> <span class="nb">dir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pdf_dir_path</span><span class="p">,</span> <span class="n">delete</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">temp_pdf</span><span class="p">:</span>
+            <span class="k">pass</span>        
+
+        <span class="c">#Run wkhtmltopdf via the appropriate subprocess call</span>
+        <span class="n">wkhtmltopdfargs</span> <span class="o">=</span> <span class="s">&quot;wkhtmltopdf&quot;</span> <span class="o">+</span> <span class="s">&quot; &quot;</span> <span class="o">+</span> <span class="n">temp_html</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s">&quot; &quot;</span> <span class="o">+</span> <span class="n">temp_pdf</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">wkhtmltopdfargs</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="c">#Remove the temporary files created</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">temp_html</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">temp_pdf</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">binary_pdf</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">binary_pdf</span><span class="p">)</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s">&#39;Content-Type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;application/pdf&#39;</span>
+        <span class="k">if</span> <span class="n">download</span> <span class="ow">is</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s">&#39;Content-Disposition&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;attachment; filename=</span><span class="si">%s</span><span class="s">.pdf&#39;</span> <span class="o">%</span> <span class="n">temp_pdf</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s">&#39;Content-Disposition&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;inline; filename=</span><span class="si">%s</span><span class="s">.pdf&#39;</span> <span class="o">%</span> <span class="n">temp_pdf</span><span class="o">.</span><span class="n">name</span>
+
+        <span class="k">if</span> <span class="n">save</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">temp_pdf</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">response</span>
+
+
+        
+</pre></div></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  
+    <a href="http://github.com/chris-griffin/flask-wkhtmltopdf"><img style="position: fixed; top: 0; right: 0; border: 0;"
+    src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+  
+
+  
+
+  </body>
+</html>

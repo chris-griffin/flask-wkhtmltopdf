@@ -31,7 +31,7 @@ class WkhtmltopdfTests(unittest.TestCase):
         self.assertTrue(self.wkhtmltopdf_celery_true.use_celery)
 
     def test_celery_default(self):
-        self.assertTrue(self.wkhtmltopdf_celery_noconfig.use_celery)
+        self.assertFalse(self.wkhtmltopdf_celery_noconfig.use_celery)
 
     def test_render_template(self):
         app = flask.Flask(__name__)
@@ -44,17 +44,19 @@ class WkhtmltopdfTests(unittest.TestCase):
 
     def test_render_pdf(self):
         app2 = flask.Flask(__name__)
+        app2.debug = True
         app2.config['WKHTMLTOPDF_USE_CELERY'] = False
-        app2.config['WKHTMLTOPDF_BIN_PATH'] = r'C:\Program Files\wkhtmltopdf\bin'
-        app2.config['TEMP_FILE_PATH'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'temp.html')
-        app2.config['PDF_DIR_PATH'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pdf')
+        app2.config['WKHTMLTOPDF_BIN_PATH'] = 'C:\\Program Files\\wkhtmltopdf\\bin'
+        app2.config['PDF_DIR_PATH'] = os.path.join(os.path.dirname(__file__), 'static', 'pdf')
         wkhtmltopdf = Wkhtmltopdf(app2)
         @app2.route('/pdf')
         def test():
-            wkhtmltopdf.render_template_to_pdf('test.html', test="It worked")
-            return 'It worked'
+            response = wkhtmltopdf.render_template_to_pdf('test.html', save=False, download=True, test="It worked")
+            return response
         rv = app2.test_client().get('/pdf')
-        self.assertEqual(rv.data, 'It worked')
+        self.assertEqual(rv.status_code, 200)
+        self.assertIn(b'%PDF', rv.data)
+
 
 
 

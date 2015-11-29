@@ -1,0 +1,139 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Flask-WkHTMLtoPDF &mdash; Flask-WkHTMLtoPDF 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/flasky.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Flask-WkHTMLtoPDF 0.1.0 documentation" href="#" /> 
+  </head>
+  <body role="document">
+  
+  
+  <div class=indexwrapper>
+  
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-flask_wkhtmltopdf">
+<span id="flask-wkhtmltopdf"></span><h1>Flask-WkHTMLtoPDF<a class="headerlink" href="#module-flask_wkhtmltopdf" title="Permalink to this headline">¶</a></h1>
+<p>Flask-WkHTMLtoPDF</p>
+<hr class="docutils" />
+<p>Convert JavaScript dependent Flask templates into PDFs with wkhtmltopdf.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">copyright:</th><td class="field-body"><ol class="first loweralpha simple" start="3">
+<li>2015 by Chris Griffin</li>
+</ol>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">license:</th><td class="field-body"><p class="first last">MIT, see LICENSE file for more info</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="class">
+<dt id="flask_wkhtmltopdf.Wkhtmltopdf">
+<em class="property">class </em><code class="descclassname">flask_wkhtmltopdf.</code><code class="descname">Wkhtmltopdf</code><span class="sig-paren">(</span><em>app=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flask_wkhtmltopdf.html#Wkhtmltopdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#flask_wkhtmltopdf.Wkhtmltopdf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wkhtmltopdf class container to use the robust wkhtmltopdf library which is 
+capable of generating a PDF from HTML, CSS, and JavaScript using a modified
+WebKit engine. This extension allows you to easily incorporate this functionality
+into your Flask app.</p>
+<p>In addition to the dependencies automatically installed, you must manually 
+download the appropriate wkhtmltopdf command line tool from 
+<a class="reference external" href="http://wkhtmltopdf.org/downloads.html">http://wkhtmltopdf.org/downloads.html</a></p>
+<p>The main function render_template_to_pdf() works similar to Flask&#8217;s built-in 
+render_template() function and in fact utilizes some of the same underlying 
+functions. However, as the name suggests, it will return a pdf instead of 
+a rendered webpage.</p>
+<p>To initialize, pass your flask app&#8217;s object to Flask-WkHTMLtoPDF:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">flask_wkhtmltopdf</span> <span class="kn">import</span> <span class="n">Wkhtmltopdf</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+<span class="n">wkhtmltopdf</span> <span class="o">=</span> <span class="n">Wkhtmltopdf</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Then pass the template to the render_template_to_pdf() function. You can 
+pass Jinja2 params just like with render_template():</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">render_template_to_pdf</span><span class="p">(</span><span class="s">&#39;test.html&#39;</span><span class="p">,</span> <span class="n">download</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">param</span><span class="o">=</span><span class="s">&#39;hello&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Celery, an asynchronous task queue, is highly suggested when using Flask-WkHTMLtoPDF as rendering 
+the PDF can be resource heavy and take an unacceptable amount of time to generate. To 
+enable Celery, set &#8216;WKHTMLTOPDF_USE_CELERY = True&#8217; in your Flask app&#8217;s config.</p>
+<p>You must add three variables to your Flask app&#8217;s config:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">WKHTMLTOPDF_BIN_PATH</span> <span class="o">=</span> <span class="s">r&#39;C:\Program Files\wkhtmltopdfin&#39;</span>
+<span class="n">PDF_DIR_PATH</span> <span class="o">=</span>  <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">__file__</span><span class="p">)),</span> <span class="s">&#39;static&#39;</span><span class="p">,</span> <span class="s">&#39;pdf&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="flask_wkhtmltopdf.Wkhtmltopdf.render_template_to_pdf">
+<code class="descname">render_template_to_pdf</code><span class="sig-paren">(</span><em>template_name_or_list</em>, <em>save=False</em>, <em>download=False</em>, <em>**context</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flask_wkhtmltopdf.html#Wkhtmltopdf.render_template_to_pdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#flask_wkhtmltopdf.Wkhtmltopdf.render_template_to_pdf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Renders a template from the template folder with the given
+context and produces a pdf. As this can be resource intensive, the function
+can easily be decorated with celery.task() by setting the WKHTMLTOPDF_USE_CELERY to True.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>template_name_or_list</strong> &#8211; The name of the template to be
+rendered, or an iterable with template names.
+The first one existing will be rendered.</li>
+<li><strong>save</strong> &#8211; Specifies whether to save the temporary pdf generated. Defaults to False.</li>
+<li><strong>download</strong> &#8211; Specifies if the pdf should be displayed in the browser
+or downloaded as an attachment. Defaults to False (in browser).</li>
+<li><strong>context</strong> &#8211; The variables that should be available in the
+context of the Jinja2 template.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  
+    <a href="http://github.com/chris-griffin/flask-wkhtmltopdf"><img style="position: fixed; top: 0; right: 0; border: 0;"
+    src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+  
+
+  
+  </div>
+  
+
+  </body>
+</html>
