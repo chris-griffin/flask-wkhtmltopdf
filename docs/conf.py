@@ -15,6 +15,7 @@
 import sys
 import os
 import shlex
+import flask
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -24,6 +25,7 @@ import shlex
 sys.path.append(os.path.abspath('_themes'))
 sys.path.insert(0, os.path.abspath('..'))
 import flask_wkhtmltopdf
+
 
 # -- General configuration ------------------------------------------------
 
