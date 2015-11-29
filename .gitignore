@@ -12,6 +12,7 @@ config.py
 *.o
 *.so
 *.egg-info
+**/_build
  
 # Packages #
 ############
