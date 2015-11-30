@@ -55,7 +55,7 @@ class WkhtmltopdfTests(unittest.TestCase):
             return response
         rv = app2.test_client().get('/pdf')
         self.assertEqual(rv.status_code, 200)
-        self.assertIn(b'%PDF', rv.data)
+        self.assertTrue(b'%PDF' in rv.data)
 
 
 
