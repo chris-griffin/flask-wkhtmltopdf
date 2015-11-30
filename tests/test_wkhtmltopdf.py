@@ -40,7 +40,7 @@ class WkhtmltopdfTests(unittest.TestCase):
             rendered = flask.render_template('test.html', test='one-two-three-four')
             return rendered
         rv = app.test_client().get('/')
-        self.assertEqual(rv.data, 'one-two-three-four')
+        self.assertEqual(rv.data, b'one-two-three-four')
 
     def test_render_pdf(self):
         app2 = flask.Flask(__name__)

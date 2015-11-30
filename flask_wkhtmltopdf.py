@@ -1,4 +1,4 @@
-'''
+    '''
     Flask-WkHTMLtoPDF
 
     -----------------
@@ -119,7 +119,25 @@ class Wkhtmltopdf(object):
 
         #Run wkhtmltopdf via the appropriate subprocess call
         wkhtmltopdfargs = "wkhtmltopdf" + " " + temp_html.name + " " + temp_pdf.name
-        subprocess.check_output(wkhtmltopdfargs, shell=True)
+        
+        #A work around for python 2.6
+        try:
+            subprocess.check_output(wkhtmltopdfargs, shell=True)
+        except:
+            def check_output(*popenargs, **kwargs):
+                process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
+                output, unused_err = process.communicate()
+                retcode = process.poll()
+                if retcode:
+                    cmd = kwargs.get("args")
+                    if cmd is None:
+                        cmd = popenargs[0]
+                    error = subprocess.CalledProcessError(retcode, cmd)
+                    error.output = output
+                    raise error
+                return output
+            subprocess.check_output = check_output
+            subprocess.check_output(wkhtmltopdfargs, shell=True)
 
         #Remove the temporary files created
         os.remove(temp_html.name)
