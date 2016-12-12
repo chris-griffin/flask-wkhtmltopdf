@@ -19,18 +19,18 @@ import os
 import tempfile
 
 class Wkhtmltopdf(object):
-    '''Wkhtmltopdf class container to use the robust wkhtmltopdf library which is 
+    '''Wkhtmltopdf class container to use the robust wkhtmltopdf library which is
     capable of generating a PDF from HTML, CSS, and JavaScript using a modified
     WebKit engine. This extension allows you to easily incorporate this functionality
     into your Flask app.
 
-    In addition to the dependencies automatically installed, you must manually 
-    download the appropriate wkhtmltopdf command line tool from 
+    In addition to the dependencies automatically installed, you must manually
+    download the appropriate wkhtmltopdf command line tool from
     http://wkhtmltopdf.org/downloads.html
 
-    The main function render_template_to_pdf() works similar to Flask's built-in 
-    render_template() function and in fact utilizes some of the same underlying 
-    functions. However, as the name suggests, it will return a pdf instead of 
+    The main function render_template_to_pdf() works similar to Flask's built-in
+    render_template() function and in fact utilizes some of the same underlying
+    functions. However, as the name suggests, it will return a pdf instead of
     a rendered webpage.
 
     To initialize, pass your flask app's object to Flask-WkHTMLtoPDF::
@@ -40,14 +40,14 @@ class Wkhtmltopdf(object):
         app = Flask(__name__)
         wkhtmltopdf = Wkhtmltopdf(app)
 
-    Then pass the template to the render_template_to_pdf() function. You can 
+    Then pass the template to the render_template_to_pdf() function. You can
     pass Jinja2 params just like with render_template()::
 
         render_template_to_pdf('test.html', download=True, save=False, param='hello')
 
-    Celery, an asynchronous task queue, is highly suggested when using Flask-WkHTMLtoPDF as rendering 
-    the PDF can be resource heavy and take an unacceptable amount of time to generate. To 
-    enable Celery, set 'WKHTMLTOPDF_USE_CELERY = True' in your Flask app's config. 
+    Celery, an asynchronous task queue, is highly suggested when using Flask-WkHTMLtoPDF as rendering
+    the PDF can be resource heavy and take an unacceptable amount of time to generate. To
+    enable Celery, set 'WKHTMLTOPDF_USE_CELERY = True' in your Flask app's config.
 
     You must add three variables to your Flask app's config::
 
@@ -85,7 +85,7 @@ class Wkhtmltopdf(object):
         '''Renders a template from the template folder with the given
         context and produces a pdf. As this can be resource intensive, the function
         can easily be decorated with celery.task() by setting the WKHTMLTOPDF_USE_CELERY to True.
-        
+
         :param template_name_or_list:    The name of the template to be
                                          rendered, or an iterable with template names.
                                          The first one existing will be rendered.
@@ -101,11 +101,11 @@ class Wkhtmltopdf(object):
         if "wkhtmltopdf" not in path:
             if self.add_path is None:
                 raise ValueError('WKHTMLTOPDF_BIN_PATH config variable must be set in the Flask app or added to the OS PATH')
-            os.environ["PATH"] += os.pathsep + self.add_path 
+            os.environ["PATH"] += os.pathsep + self.add_path
 
-        
+
         #render appropriate template and write to a temp file
-        rendered = render_template(template_name_or_list, **context)
+        rendered = render_template(template_name_or_list, **context).encode('utf-8')
         with tempfile.NamedTemporaryFile(suffix='.html', dir=os.path.dirname(__file__), delete=False, mode='w') as temp_html:
             temp_html.write(rendered)
 
@@ -115,11 +115,11 @@ class Wkhtmltopdf(object):
         if not os.path.isdir(self.pdf_dir_path):
             os.makedirs(self.pdf_dir_path)
         with tempfile.NamedTemporaryFile(suffix='.pdf', dir=self.pdf_dir_path, delete=False) as temp_pdf:
-            pass        
+            pass
 
         #Run wkhtmltopdf via the appropriate subprocess call
         wkhtmltopdfargs = "wkhtmltopdf" + " " + temp_html.name + " " + temp_pdf.name
-        
+
         #A work around for python 2.6
         try:
             subprocess.check_output(wkhtmltopdfargs, shell=True)
@@ -154,14 +154,5 @@ class Wkhtmltopdf(object):
 
         if save is False:
             os.remove(temp_pdf.name)
-        
+
         return response
-
-
-        
-
-
-
-
-
-
