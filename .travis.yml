@@ -1,6 +1,5 @@
 language: python
 python:
-  - 2.6
   - 2.7
   - 3.3
   - 3.4
@@ -11,5 +10,6 @@ before_install:
 install: pip install flask && pip install celery
 before_script:
   - "wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.2.1/wkhtmltox-0.12.2.1_linux-precise-amd64.deb"
+  - "sudo apt-get install -f"
   - "sudo dpkg -i wkhtmltox-0.12.2.1_linux-precise-amd64.deb"
 script: python setup.py test
