@@ -9,7 +9,7 @@ before_install:
   - sudo apt-get install xfonts-75dpi
 install: pip install flask && pip install celery
 before_script:
-  - "wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.2.1/wkhtmltox-0.12.2.1_linux-precise-amd64.deb"
+  - "wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.2.1/wkhtmltox-0.12.2.1_linux-trusty-amd64.deb"
   - "sudo apt-get install -f"
-  - "sudo dpkg -i wkhtmltox-0.12.2.1_linux-precise-amd64.deb"
+  - "sudo dpkg -i wkhtmltox-0.12.2.1_linux-trusty-amd64.deb"
 script: python setup.py test
