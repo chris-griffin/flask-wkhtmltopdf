@@ -81,7 +81,7 @@ class Wkhtmltopdf(object):
 
 
     @_maybe_decorate(use_celery, celery.task())
-    def render_template_to_pdf(self, template_name_or_list, save=False, download=False, **context):
+    def render_template_to_pdf(self, template_name_or_list, save=False, download=False, wkhtmltopdf_args=None, **context):
         '''Renders a template from the template folder with the given
         context and produces a pdf. As this can be resource intensive, the function
         can easily be decorated with celery.task() by setting the WKHTMLTOPDF_USE_CELERY to True.
@@ -94,6 +94,7 @@ class Wkhtmltopdf(object):
                             or downloaded as an attachment. Defaults to False (in browser).
         :param context:    The variables that should be available in the
                            context of the Jinja2 template.
+        :param wkhtmltopdf_args: Optional list of arguments to send to wkhtmltopdf (list of -- options)
         '''
 
         #Get the system's PATH and add wkhtmltopdf to it if necessary
@@ -117,8 +118,19 @@ class Wkhtmltopdf(object):
         with tempfile.NamedTemporaryFile(suffix='.pdf', dir=self.pdf_dir_path, delete=False) as temp_pdf:
             pass
 
+        cli_options = ""
+        
+        # Parse argument list supplied and add them as options to wkhtmltopdf
+        if wkhtmltopdf_args:
+            for argument in wkhtmltopdf_args:
+                print(argument)
+                if argument.startswith('--'):
+                    cli_options += ' ' + argument
+                else:
+                    cli_options += ' --' + argument
+
         #Run wkhtmltopdf via the appropriate subprocess call
-        wkhtmltopdfargs = "wkhtmltopdf" + " " + temp_html.name + " " + temp_pdf.name
+        wkhtmltopdfargs = "wkhtmltopdf" + cli_options + " " + temp_html.name + " " + temp_pdf.name
 
         #A work around for python 2.6
         try:
