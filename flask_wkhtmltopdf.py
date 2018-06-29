@@ -123,7 +123,6 @@ class Wkhtmltopdf(object):
         # Parse argument list supplied and add them as options to wkhtmltopdf
         if wkhtmltopdf_args:
             for argument in wkhtmltopdf_args:
-                print(argument)
                 if argument.startswith('--'):
                     cli_options += ' ' + argument
                 else:
